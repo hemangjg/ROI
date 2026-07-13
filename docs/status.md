@@ -37,11 +37,20 @@ GET /v1/orgs/{id}/spend/summary shows non-zero today_usd / mtd_usd
 ```bash
 cd "/Users/hemangjg/Hemangs stuff/Projects/ai-finops"
 export PATH="$(go env GOPATH)/bin:$PATH"
-bash scripts/ci-local.sh
-docker compose --profile services up -d
-bash scripts/init-local.sh
-bash scripts/e2e-smoke.sh
+bash scripts/quality-gate.sh
+# Live pipeline:
+WITH_E2E=1 bash scripts/quality-gate.sh
 ```
+
+See also [runbook.md](./runbook.md) and root `AGENTS.md`.
+
+## Base hardening (post Phase 1b)
+
+- `packages/events.EnsureTopic` on outbox + workflow boot
+- Kafka reader `WatchPartitionChanges`
+- Unit tests: workflow UUID helpers, OpenAI/Anthropic catalogs, events validation
+- `scripts/quality-gate.sh` single entry for offline (+ optional e2e)
+- `AGENTS.md` + `docs/runbook.md`
 
 ## Not claimed
 

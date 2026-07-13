@@ -8,8 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ai-finops/ai-finops/services/workflow-service/internal/di"
+	"github.com/ai-finops/ai-finops/packages/events"
 	"github.com/ai-finops/ai-finops/packages/shared"
+	"github.com/ai-finops/ai-finops/services/workflow-service/internal/di"
 )
 
 func main() {
@@ -19,6 +20,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer cleanup()
+
+	if err := events.EnsureTopic(app.Config.KafkaBrokers, app.Config.KafkaTopic, 1); err != nil {
+		app.Log.Error("failed to ensure kafka topic",
+			slog.String("topic", app.Config.KafkaTopic),
+			slog.String("error", err.Error()),
+		)
+		os.Exit(1)
+	}
 
 	runCtx, stopWorkers := context.WithCancel(context.Background())
 	defer stopWorkers()

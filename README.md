@@ -267,4 +267,5 @@ Clients (SDKs + Dashboard)
 4. Phase 1 foundation: `bash scripts/setup-ws12.sh` then `pnpm dev`
 5. Phase 1b: `bash scripts/setup-p2-ws1.sh` then continue with protos and business APIs
 6. End-to-end smoke (Docker services up): `bash scripts/e2e-smoke.sh`
-7. Verification log: [docs/status.md](./docs/status.md)
+7. Quality gate (offline): `bash scripts/quality-gate.sh` — with e2e: `WITH_E2E=1 bash scripts/quality-gate.sh`
+8. Verification log: [docs/status.md](./docs/status.md) · Runbook: [docs/runbook.md](./docs/runbook.md) · Agents: [AGENTS.md](./AGENTS.md)

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ai-finops/ai-finops/packages/config"
+	"github.com/ai-finops/ai-finops/packages/events"
 	"github.com/ai-finops/ai-finops/packages/logger"
 	svcconfig "github.com/ai-finops/ai-finops/services/outbox-relay/internal/config"
 	"github.com/ai-finops/ai-finops/services/outbox-relay/internal/infrastructure/postgres"
@@ -34,6 +35,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+
+	if err := events.EnsureTopic(cfg.KafkaBrokers, cfg.KafkaTopic, 1); err != nil {
+		log.Error("failed to ensure kafka topic",
+			slog.String("topic", cfg.KafkaTopic),
+			slog.String("error", err.Error()),
+		)
+		os.Exit(1)
+	}
 
 	rel, err := relay.New(pool, queries, cfg, log)
 	if err != nil {

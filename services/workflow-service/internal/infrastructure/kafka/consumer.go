@@ -29,13 +29,15 @@ func NewConsumer(brokers, topic, groupID string, svc *workflowapp.Service, log *
 	brokerList := strings.Split(brokers, ",")
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:        brokerList,
-			Topic:          topic,
-			GroupID:        groupID,
-			MinBytes:       1,
-			MaxBytes:       10e6,
-			CommitInterval: time.Second,
-			StartOffset:    kafka.FirstOffset,
+			Brokers:               brokerList,
+			Topic:                 topic,
+			GroupID:               groupID,
+			MinBytes:              1,
+			MaxBytes:              10e6,
+			CommitInterval:        time.Second,
+			StartOffset:           kafka.FirstOffset,
+			WatchPartitionChanges: true,
+			MaxWait:               time.Second,
 		}),
 		svc: svc,
 		log: log,
