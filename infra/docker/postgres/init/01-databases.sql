@@ -1,0 +1,2 @@
+CREATE DATABASE atlas_dev;
+CREATE DATABASE openfga;

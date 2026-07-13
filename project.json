@@ -1,0 +1,43 @@
+{
+  "name": "workspace",
+  "$schema": "./node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": ".",
+  "tags": ["type:workspace"],
+  "targets": {
+    "proto-lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "buf lint",
+        "cwd": "contracts/proto"
+      }
+    },
+    "proto-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["buf lint", "buf generate"],
+        "parallel": false,
+        "cwd": "contracts/proto"
+      }
+    },
+    "sqlc-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "sqlc generate",
+        "cwd": "db/atlas/sql"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bash scripts/dev.sh"
+      }
+    },
+    "ci-local": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bash scripts/ci-local.sh"
+      }
+    }
+  }
+}

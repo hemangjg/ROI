@@ -1,0 +1,7 @@
+environment: local
+log_level: info
+http_port: 8082
+grpc_port: 9091
+database_url: postgres://finops:finops@localhost:5432/finops?sslmode=disable
+redis_url: redis://localhost:6379
+otlp_endpoint: http://localhost:4317

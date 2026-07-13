@@ -1,0 +1,2 @@
+-- Phase 1 empty baseline migration.
+-- No tables. No indexes. No constraints. No relationships.

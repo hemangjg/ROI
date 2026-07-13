@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+.next
+coverage
+pnpm-lock.yaml
+packages/proto/gen
+gen
+*.md
+go.sum
+go.work.sum

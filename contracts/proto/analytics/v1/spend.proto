@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package analytics.v1;
+
+option go_package = "github.com/ai-finops/ai-finops/packages/proto/gen/go/analytics/v1;analyticsv1";
+
+import "google/protobuf/timestamp.proto";
+
+message GetSpendSummaryRequest {
+  string org_id = 1;
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+  string team_id = 4;
+}
+
+message GetSpendSummaryResponse {
+  string today_usd = 1;
+  string mtd_usd = 2;
+  string previous_period_usd = 3;
+  double change_pct = 4;
+}
+
+message TimeSeriesPoint {
+  string date = 1;
+  string cost_usd = 2;
+}
+
+message GetSpendTimeSeriesRequest {
+  string org_id = 1;
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+  string granularity = 4;
+  string team_id = 5;
+}
+
+message GetSpendTimeSeriesResponse {
+  repeated TimeSeriesPoint data = 1;
+}
+
+service AnalyticsService {
+  rpc GetSpendSummary(GetSpendSummaryRequest) returns (GetSpendSummaryResponse);
+  rpc GetSpendTimeSeries(GetSpendTimeSeriesRequest) returns (GetSpendTimeSeriesResponse);
+}

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/ai-finops/api/gen/go/auth/v1;authv1";
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  string org_id = 3;
+  repeated string roles = 4;
+}
+
+message ValidateApiKeyRequest {
+  string api_key = 1;
+}
+
+message ValidateApiKeyResponse {
+  bool valid = 1;
+  string org_id = 2;
+  string key_id = 3;
+}
+
+service AuthService {
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc ValidateApiKey(ValidateApiKeyRequest) returns (ValidateApiKeyResponse);
+}

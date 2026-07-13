@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package bootstrap.health.v1;
+
+option go_package = "github.com/ai-finops/ai-finops/packages/proto/gen/go/bootstrap/health/v1;healthv1";
+
+// HealthCheckRequest is a bootstrap message used to verify the protobuf toolchain.
+// It must not contain any AI FinOps domain models.
+message HealthCheckRequest {}
+
+// HealthCheckResponse is a bootstrap message used to verify the protobuf toolchain.
+message HealthCheckResponse {
+  string status = 1;
+}

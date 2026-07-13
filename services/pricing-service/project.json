@@ -1,0 +1,37 @@
+{
+  "name": "pricing-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "services/pricing-service",
+  "tags": ["type:service", "scope:backend"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go build -o ../../dist/pricing-service ./cmd/server",
+        "cwd": "services/pricing-service"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go run ./cmd/server",
+        "cwd": "services/pricing-service"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go test ./... -count=1",
+        "cwd": "services/pricing-service"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go vet ./...",
+        "cwd": "services/pricing-service"
+      }
+    }
+  }
+}

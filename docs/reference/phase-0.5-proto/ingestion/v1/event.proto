@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package ingestion.v1;
+
+option go_package = "github.com/ai-finops/api/gen/go/ingestion/v1;ingestionv1";
+
+import "google/protobuf/timestamp.proto";
+
+message UsageEventMetadata {
+  string team_id = 1;
+  string user_id = 2;
+  string project = 3;
+  string feature = 4;
+  string customer = 5;
+}
+
+message UsageEvent {
+  string idempotency_key = 1;
+  string provider = 2;
+  string model = 3;
+  uint32 input_tokens = 4;
+  uint32 output_tokens = 5;
+  uint32 cache_read_tokens = 6;
+  uint32 cache_write_tokens = 7;
+  google.protobuf.Timestamp occurred_at = 8;
+  UsageEventMetadata metadata = 9;
+}
+
+message IngestEventRequest {
+  string org_id = 1;
+  UsageEvent event = 2;
+}
+
+message IngestEventResponse {
+  string event_id = 1;
+  string status = 2;
+}
+
+message UsageEventCreated {
+  string event_id = 1;
+  string org_id = 2;
+  UsageEvent event = 3;
+  google.protobuf.Timestamp received_at = 4;
+}
+
+service IngestionService {
+  rpc IngestEvent(IngestEventRequest) returns (IngestEventResponse);
+}

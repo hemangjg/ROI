@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package workflow.v1;
+
+option go_package = "github.com/ai-finops/ai-finops/packages/proto/gen/go/workflow/v1;workflowv1";
+
+import "ingestion/v1/event.proto";
+
+message ProcessUsageEventRequest {
+  string event_id = 1;
+  string org_id = 2;
+  ingestion.v1.UsageEvent event = 3;
+}
+
+message ProcessUsageEventResponse {
+  string status = 1;
+  string cost_usd = 2;
+}
+
+service WorkflowService {
+  rpc ProcessUsageEvent(ProcessUsageEventRequest) returns (ProcessUsageEventResponse);
+}

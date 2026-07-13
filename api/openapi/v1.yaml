@@ -1,0 +1,491 @@
+openapi: 3.1.0
+info:
+  title: AI FinOps Platform API
+  version: 1.0.0
+  description: External REST API for SDK ingestion and dashboard access.
+servers:
+  - url: https://api.ai-finops.io/v1
+    description: Production
+  - url: http://localhost:8888/v1
+    description: Local (Envoy Gateway)
+security:
+  - BearerAuth: []
+paths:
+  /events:
+    post:
+      tags: [Ingestion]
+      summary: Ingest single usage event
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsageEvent"
+      responses:
+        "202":
+          description: Event accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /events/batch:
+    post:
+      tags: [Ingestion]
+      summary: Ingest batch of usage events (max 500)
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [events]
+              properties:
+                events:
+                  type: array
+                  maxItems: 500
+                  items:
+                    $ref: "#/components/schemas/UsageEvent"
+      responses:
+        "202":
+          description: Batch accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchIngestResponse"
+  /events/{eventId}:
+    get:
+      tags: [Ingestion]
+      summary: Get event processing status
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Event status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventStatus"
+  /auth/register:
+    post:
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User and org created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /auth/login:
+    post:
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /orgs/{orgId}/spend/summary:
+    get:
+      tags: [Analytics]
+      summary: Organization spend summary
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpendSummary"
+  /orgs/{orgId}/spend/timeseries:
+    get:
+      tags: [Analytics]
+      summary: Daily spend time series
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/TeamId"
+        - name: granularity
+          in: query
+          schema:
+            type: string
+            enum: [daily]
+            default: daily
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpendTimeSeries"
+  /orgs/{orgId}/spend/by-provider:
+    get:
+      tags: [Analytics]
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpendByProvider"
+  /orgs/{orgId}/spend/by-team:
+    get:
+      tags: [Analytics]
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpendByTeam"
+  /orgs/{orgId}/api-keys:
+    post:
+      tags: [Management]
+      summary: Create API key
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyCreated"
+    get:
+      tags: [Management]
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKey"
+  /orgs/{orgId}/audit-logs:
+    get:
+      tags: [Management]
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogPage"
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+      description: API key prefixed with aif_
+  parameters:
+    OrgId:
+      name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    From:
+      name: from
+      in: query
+      schema:
+        type: string
+        format: date-time
+    To:
+      name: to
+      in: query
+      schema:
+        type: string
+        format: date-time
+    TeamId:
+      name: team_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    UsageEvent:
+      type: object
+      required: [idempotency_key, provider, model, input_tokens, output_tokens, occurred_at]
+      properties:
+        idempotency_key:
+          type: string
+          maxLength: 128
+        provider:
+          type: string
+        model:
+          type: string
+        input_tokens:
+          type: integer
+          minimum: 0
+        output_tokens:
+          type: integer
+          minimum: 0
+        cache_read_tokens:
+          type: integer
+          minimum: 0
+        cache_write_tokens:
+          type: integer
+          minimum: 0
+        occurred_at:
+          type: string
+          format: date-time
+        metadata:
+          $ref: "#/components/schemas/EventMetadata"
+    EventMetadata:
+      type: object
+      properties:
+        team_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        project:
+          type: string
+        feature:
+          type: string
+        customer:
+          type: string
+    IngestResponse:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued]
+    BatchIngestResponse:
+      type: object
+      properties:
+        accepted:
+          type: integer
+        rejected:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              code:
+                type: string
+              message:
+                type: string
+    EventStatus:
+      type: object
+      properties:
+        event_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, processed, failed]
+        cost_usd:
+          type: string
+    RegisterRequest:
+      type: object
+      required: [email, password, name, org_name]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+        org_name:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        org_id:
+          type: string
+    SpendSummary:
+      type: object
+      properties:
+        today_usd:
+          type: string
+        mtd_usd:
+          type: string
+        previous_period_usd:
+          type: string
+        change_pct:
+          type: number
+    SpendTimeSeries:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              cost_usd:
+                type: string
+    SpendByProvider:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              cost_usd:
+                type: string
+              pct:
+                type: number
+    SpendByTeam:
+      type: object
+      properties:
+        teams:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              cost_usd:
+                type: string
+              event_count:
+                type: integer
+    ApiKeyCreated:
+      type: object
+      properties:
+        key_id:
+          type: string
+        api_key:
+          type: string
+          description: Shown only once
+        key_prefix:
+          type: string
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        key_prefix:
+          type: string
+        created_at:
+          type: string
+    AuditLogPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+        next_cursor:
+          type: string
+  responses:
+    ValidationError:
+      description: Validation error
+    Unauthorized:
+      description: Unauthorized
+    RateLimited:
+      description: Rate limit exceeded

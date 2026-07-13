@@ -1,0 +1,13 @@
+environment: local
+log_level: info
+http_port: 8085
+grpc_port: 9094
+database_url: postgres://finops:finops@localhost:5432/finops?sslmode=disable
+redis_url: redis://localhost:6379
+otlp_endpoint: http://localhost:4317
+kafka_brokers: localhost:9092
+kafka_topic: usage.events.raw
+kafka_group_id: workflow-service
+pricing_grpc_addr: localhost:9092
+clickhouse_url: clickhouse://localhost:9000/finops
+idempotency_ttl_hours: 2160

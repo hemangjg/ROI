@@ -1,0 +1,324 @@
+admin:
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9901
+
+static_resources:
+  listeners:
+    - name: listener_http
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8888
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: AUTO
+                use_remote_address: true
+                route_config:
+                  name: api_http_routes
+                  virtual_hosts:
+                    - name: api_http
+                      domains: ["*"]
+                      routes:
+                        - match: { path: "/gateway/healthz" }
+                          direct_response:
+                            status: 200
+                            body: { inline_string: '{"status":"ok"}' }
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/_gateway/healthz/identity" }
+                          route:
+                            cluster: identity
+                            prefix_rewrite: "/healthz"
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/_gateway/healthz/ingestion" }
+                          route:
+                            cluster: ingestion
+                            prefix_rewrite: "/healthz"
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/_gateway/healthz/management" }
+                          route:
+                            cluster: management
+                            prefix_rewrite: "/healthz"
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/_gateway/healthz/analytics" }
+                          route:
+                            cluster: analytics
+                            prefix_rewrite: "/healthz"
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/_gateway/healthz/pricing" }
+                          route:
+                            cluster: pricing
+                            prefix_rewrite: "/healthz"
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/_gateway/healthz/workflow" }
+                          route:
+                            cluster: workflow
+                            prefix_rewrite: "/healthz"
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match:
+                            safe_regex:
+                              google_re2: {}
+                              regex: "^/v1/orgs/[^/]+/spend(/.*)?$"
+                          route: { cluster: analytics, timeout: 30s }
+                        - match: { prefix: "/v1/events" }
+                          route: { cluster: ingestion, timeout: 30s }
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/v1/auth" }
+                          route: { cluster: identity, timeout: 30s }
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/v1/orgs" }
+                          route: { cluster: management, timeout: 30s }
+                http_filters:
+                  - name: envoy.filters.http.ext_authz
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                      transport_api_version: V3
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: identity_grpc
+                        timeout: 1s
+                      failure_mode_allow: false
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+    - name: listener_https_api
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8443
+      filter_chains:
+        - transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                tls_certificates:
+                  - certificate_chain: { filename: "/etc/envoy/certs/tls.crt" }
+                    private_key: { filename: "/etc/envoy/certs/tls.key" }
+          filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_https_api
+                codec_type: AUTO
+                use_remote_address: true
+                route_config:
+                  name: api_https_routes
+                  virtual_hosts:
+                    - name: api_https
+                      domains:
+                        - "api.ai-finops.local"
+                        - "api.ai-finops.local:8443"
+                        - "localhost"
+                        - "localhost:8443"
+                      routes:
+                        - match: { path: "/gateway/healthz" }
+                          direct_response:
+                            status: 200
+                            body: { inline_string: '{"status":"ok"}' }
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match:
+                            safe_regex:
+                              google_re2: {}
+                              regex: "^/v1/orgs/[^/]+/spend(/.*)?$"
+                          route: { cluster: analytics, timeout: 30s }
+                        - match: { prefix: "/v1/events" }
+                          route: { cluster: ingestion, timeout: 30s }
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/v1/auth" }
+                          route: { cluster: identity, timeout: 30s }
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: { prefix: "/v1/orgs" }
+                          route: { cluster: management, timeout: 30s }
+                http_filters:
+                  - name: envoy.filters.http.ext_authz
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                      transport_api_version: V3
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: identity_grpc
+                        timeout: 1s
+                      failure_mode_allow: false
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+    - name: listener_https_app
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8444
+      filter_chains:
+        - transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                tls_certificates:
+                  - certificate_chain: { filename: "/etc/envoy/certs/tls.crt" }
+                    private_key: { filename: "/etc/envoy/certs/tls.key" }
+          filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_https_app
+                codec_type: AUTO
+                route_config:
+                  name: app_https_routes
+                  virtual_hosts:
+                    - name: app_https
+                      domains:
+                        - "app.ai-finops.local"
+                        - "app.ai-finops.local:8444"
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: web, timeout: 30s }
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+    - name: identity
+      connect_timeout: 5s
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: identity
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: identity-service, port_value: 8080 }
+
+    - name: identity_grpc
+      connect_timeout: 5s
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: identity_grpc
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: identity-service, port_value: 9090 }
+
+    - name: ingestion
+      connect_timeout: 5s
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: ingestion
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: ingestion-service, port_value: 8081 }
+
+    - name: management
+      connect_timeout: 5s
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: management
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: management-service, port_value: 8082 }
+
+    - name: analytics
+      connect_timeout: 5s
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: analytics
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: analytics-service, port_value: 8083 }
+
+    - name: pricing
+      connect_timeout: 5s
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: pricing
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: pricing-service, port_value: 8084 }
+
+    - name: workflow
+      connect_timeout: 5s
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: workflow
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: workflow-service, port_value: 8085 }
+
+    - name: web
+      connect_timeout: 5s
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: web
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: web, port_value: 3000 }

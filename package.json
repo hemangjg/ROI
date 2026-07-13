@@ -1,0 +1,39 @@
+{
+  "name": "@ai-finops/workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI FinOps platform monorepo",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "nx run workspace:dev",
+    "dev:docker": "docker compose --profile services up --build",
+    "build": "nx run-many -t build --exclude=workspace",
+    "test": "nx run-many -t test",
+    "lint": "nx run-many -t lint",
+    "lint:go": "bash scripts/lint-go.sh",
+    "lint:ts": "pnpm format:check && pnpm --filter @ai-finops/web lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "ci:local": "bash scripts/ci-local.sh",
+    "graph": "nx graph",
+    "proto:lint": "nx run workspace:proto-lint",
+    "proto:generate": "nx run workspace:proto-generate",
+    "sqlc:generate": "nx run workspace:sqlc-generate",
+    "test:go": "bash scripts/test-packages.sh",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
+    "@nx/js": "^21.0.0",
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7",
+    "nx": "^21.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.0"
+  }
+}

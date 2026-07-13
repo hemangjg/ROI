@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package pricing.v1;
+
+option go_package = "github.com/ai-finops/ai-finops/packages/proto/gen/go/pricing/v1;pricingv1";
+
+import "google/protobuf/timestamp.proto";
+
+message CalculateCostRequest {
+  string provider = 1;
+  string model = 2;
+  uint32 input_tokens = 3;
+  uint32 output_tokens = 4;
+  uint32 cache_read_tokens = 5;
+  uint32 cache_write_tokens = 6;
+  google.protobuf.Timestamp occurred_at = 7;
+}
+
+message CalculateCostResponse {
+  string cost_usd = 1;
+  bool is_priced = 2;
+  string model_id = 3;
+}
+
+message PriceEntry {
+  string model_id = 1;
+  string provider = 2;
+  string model = 3;
+  string input_price_per_1m = 4;
+  string output_price_per_1m = 5;
+  google.protobuf.Timestamp effective_from = 6;
+}
+
+service PricingService {
+  rpc CalculateCost(CalculateCostRequest) returns (CalculateCostResponse);
+  rpc SyncPricingCatalog(SyncPricingCatalogRequest) returns (SyncPricingCatalogResponse);
+}
+
+message SyncPricingCatalogRequest {}
+message SyncPricingCatalogResponse {
+  uint32 models_updated = 1;
+}

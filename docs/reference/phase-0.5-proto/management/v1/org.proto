@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package management.v1;
+
+option go_package = "github.com/ai-finops/api/gen/go/management/v1;managementv1";
+
+message CreateOrgRequest {
+  string name = 1;
+  string slug = 2;
+}
+
+message CreateOrgResponse {
+  string org_id = 1;
+}
+
+message CreateApiKeyRequest {
+  string org_id = 1;
+  string name = 2;
+}
+
+message CreateApiKeyResponse {
+  string key_id = 1;
+  string api_key = 2;
+  string key_prefix = 3;
+}
+
+service ManagementService {
+  rpc CreateOrg(CreateOrgRequest) returns (CreateOrgResponse);
+  rpc CreateApiKey(CreateApiKeyRequest) returns (CreateApiKeyResponse);
+}

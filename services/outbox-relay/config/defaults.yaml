@@ -1,0 +1,8 @@
+environment: local
+log_level: info
+http_port: 8086
+database_url: postgres://finops:finops@localhost:5432/finops?sslmode=disable
+kafka_brokers: localhost:9092
+kafka_topic: usage.events.raw
+poll_interval: 100ms
+batch_size: 500

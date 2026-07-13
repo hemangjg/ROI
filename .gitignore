@@ -1,0 +1,72 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+.next/
+.turbo/
+out/
+bin/
+tmp/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Generated code (regenerate via pnpm proto:generate / sqlc:generate)
+packages/proto/gen/
+db/atlas/sql/gen/
+gen/
+
+# SQLC bootstrap stubs committed until sqlc:generate is run in CI
+!db/atlas/sql/gen/
+
+# Nx
+.nx/cache
+.nx/workspace-data
+nx-graph.json
+
+# Environment
+.env
+.env.*
+!.env.example
+services/*/config/config.local.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test / coverage
+coverage/
+
+# Docker
+docker-compose.override.yml
+
+# Secrets
+*.pem
+*.key
+secrets/certs/*.crt
+secrets/jwt/*.pem
+secrets/jwt/
+
+# Local agent / editor plans
+.hermes/
+.cursor/

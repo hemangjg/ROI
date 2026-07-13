@@ -1,0 +1,21 @@
+go 1.25.0
+
+use (
+	./db/atlas/sql
+	./packages/auth
+	./packages/config
+	./packages/events
+	./packages/logger
+	./packages/proto
+	./packages/sdk-core
+	./packages/shared
+	./packages/types
+	./packages/validation
+	./services/analytics-service
+	./services/identity-service
+	./services/ingestion-service
+	./services/management-service
+	./services/outbox-relay
+	./services/pricing-service
+	./services/workflow-service
+)
