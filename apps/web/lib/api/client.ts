@@ -114,7 +114,8 @@ export const api = {
       return apiFetch<AuditLogPage>(`/orgs/${orgId}/audit-logs`);
     },
     async listTeams(orgId: string): Promise<Team[]> {
-      if (shouldUseMocks()) return [{ id: "team-demo", name: "Platform", created_at: new Date().toISOString() }];
+      if (shouldUseMocks())
+        return [{ id: "team-demo", name: "Platform", created_at: new Date().toISOString() }];
       return apiFetch<Team[]>(`/orgs/${orgId}/teams`);
     },
     async listBudgets(orgId: string, period?: string): Promise<Budget[]> {

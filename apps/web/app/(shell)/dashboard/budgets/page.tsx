@@ -116,7 +116,8 @@ export default function BudgetsPage() {
               Team monthly budgets
             </CardTitle>
             <CardDescription>
-              Period {period} (UTC). Soft alerts fire when spend reaches the threshold (default 80%).
+              Period {period} (UTC). Soft alerts fire when spend reaches the threshold (default
+              80%).
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
@@ -142,7 +143,11 @@ export default function BudgetsPage() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="threshold">Soft threshold %</Label>
-                <Input id="threshold" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
+                <Input
+                  id="threshold"
+                  value={threshold}
+                  onChange={(e) => setThreshold(e.target.value)}
+                />
               </div>
               <Button onClick={() => void onSaveBudget()} disabled={!teamId || loading}>
                 Save budget
@@ -156,7 +161,11 @@ export default function BudgetsPage() {
               <p className="text-sm text-muted-foreground">
                 Evaluate against the saved budget. Wire this to live analytics spend in a follow-up.
               </p>
-              <Button variant="secondary" onClick={() => void onEvaluate()} disabled={!teamId || loading}>
+              <Button
+                variant="secondary"
+                onClick={() => void onEvaluate()}
+                disabled={!teamId || loading}
+              >
                 Evaluate soft limit
               </Button>
               {message ? <p className="text-sm text-foreground">{message}</p> : null}
@@ -176,7 +185,10 @@ export default function BudgetsPage() {
                 <p className="text-muted-foreground">No budgets for this period yet.</p>
               ) : null}
               {budgets.map((b) => (
-                <div key={b.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                >
                   <div>
                     <p className="font-medium">{b.team_name || b.team_id}</p>
                     <p className="text-muted-foreground">
@@ -194,7 +206,9 @@ export default function BudgetsPage() {
               <CardTitle>Open alerts</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {alerts.length === 0 ? <p className="text-muted-foreground">No open alerts.</p> : null}
+              {alerts.length === 0 ? (
+                <p className="text-muted-foreground">No open alerts.</p>
+              ) : null}
               {alerts.map((a) => (
                 <div key={a.id} className="space-y-2 rounded-md border px-3 py-2">
                   <p>{a.message}</p>
