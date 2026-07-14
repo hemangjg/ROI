@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   Building2,
   KeyRound,
@@ -13,13 +14,15 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { useOrgId } from "@/hooks/use-org-id";
+import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/providers", label: "Providers", icon: LineChart },
   { href: "/dashboard/teams", label: "Teams", icon: Users },
-  { href: "/dashboard/budgets", label: "Budgets", icon: Wallet },
+  { href: "/dashboard/budgets", label: "Budgets", icon: Wallet, badgeKey: "alerts" as const },
 ];
 
 const settingsItems = [
@@ -31,6 +34,13 @@ const settingsItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const orgId = useOrgId();
+  const alerts = useQuery({
+    queryKey: ["budget-alerts", "open", orgId],
+    queryFn: () => api.management.listBudgetAlerts(orgId, "open"),
+    staleTime: 30_000,
+  });
+  const openAlerts = alerts.data?.length ?? 0;
 
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-card">
@@ -49,6 +59,7 @@ export function AppSidebar() {
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href;
+              const showBadge = item.badgeKey === "alerts" && openAlerts > 0;
               return (
                 <Link
                   key={item.href}
@@ -61,7 +72,19 @@ export function AppSidebar() {
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {showBadge ? (
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                        active
+                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          : "bg-destructive text-destructive-foreground",
+                      )}
+                    >
+                      {openAlerts}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}

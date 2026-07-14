@@ -52,13 +52,16 @@ See also [runbook.md](./runbook.md) and root `AGENTS.md`.
 - `scripts/quality-gate.sh` single entry for offline (+ optional e2e)
 - `AGENTS.md` + `docs/runbook.md`
 
-## Phase 2 — budgets (first slice)
+## Phase 2 — budgets
 
-Shipped:
+Shipped (Sprint A):
 
 - `budgets` + `budget_alerts` tables (Atlas migration `20260713120000_budgets.sql`)
 - Management API: `PUT/GET /v1/orgs/{id}/budgets`, `POST .../budgets/evaluate`, `GET/POST .../budget-alerts`
-- Soft threshold math unit tests + dashboard **Budgets** page
+- Soft threshold unit tests (Go + web helpers)
+- Dashboard **Budgets**: live MTD analytics by-team spend, progress bars + soft marker, **Evaluate live spend**
+- Overview open-alert card + sidebar Budgets badge
+- `scripts/e2e-budgets.sh` (register → team → budget → soft alert → ack)
 - OpenAPI updated
 
-Still later in Phase 2: email/Slack delivery, auto-evaluate from ClickHouse spend, hard limits, forecasting, allowlists.
+Still later: email/Slack delivery, hard limits, forecasting, model allowlist.

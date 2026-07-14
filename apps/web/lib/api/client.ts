@@ -119,7 +119,21 @@ export const api = {
       return apiFetch<Team[]>(`/orgs/${orgId}/teams`);
     },
     async listBudgets(orgId: string, period?: string): Promise<Budget[]> {
-      if (shouldUseMocks()) return [];
+      if (shouldUseMocks()) {
+        return [
+          {
+            id: "budget-demo",
+            org_id: orgId,
+            team_id: "team-demo",
+            team_name: "Platform",
+            amount_usd: "1000.00",
+            soft_threshold_pct: 80,
+            period_start: period ? `${period}-01` : "2026-07-01",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ];
+      }
       const q = period ? `?period=${encodeURIComponent(period)}` : "";
       return apiFetch<Budget[]>(`/orgs/${orgId}/budgets${q}`);
     },
@@ -175,7 +189,23 @@ export const api = {
       });
     },
     async listBudgetAlerts(orgId: string, status?: string): Promise<BudgetAlert[]> {
-      if (shouldUseMocks()) return [];
+      if (shouldUseMocks()) {
+        if (status === "acknowledged") return [];
+        return [
+          {
+            id: "alert-demo",
+            budget_id: "budget-demo",
+            org_id: orgId,
+            team_id: "team-demo",
+            threshold_pct: 80,
+            spend_usd: "850.00",
+            budget_usd: "1000.00",
+            status: "open",
+            message: "Platform soft budget threshold 80% reached (MTD mock).",
+            created_at: new Date().toISOString(),
+          },
+        ];
+      }
       const q = status ? `?status=${encodeURIComponent(status)}` : "";
       return apiFetch<BudgetAlert[]>(`/orgs/${orgId}/budget-alerts${q}`);
     },

@@ -34,6 +34,7 @@ if [[ "${WITH_E2E:-0}" == "1" ]]; then
     done
   fi
   bash scripts/e2e-smoke.sh
+  bash scripts/e2e-budgets.sh
 fi
 
 echo ""
@@ -41,4 +42,5 @@ echo "Quality gate PASSED"
 echo "  offline CI: ok"
 if [[ "${WITH_E2E:-0}" == "1" ]]; then
   echo "  e2e smoke: ok"
+  echo "  e2e budgets: ok"
 fi
