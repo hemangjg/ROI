@@ -11,24 +11,28 @@ echo "==> install dependencies"
 pnpm install
 go work sync
 
+echo "==> proto generate (required for Go lint/test; gen/ is gitignored)"
+if command -v buf >/dev/null 2>&1; then
+  if [[ ! -d packages/proto/gen/go ]]; then
+    pnpm proto:generate
+  else
+    echo "    proto gen present (use pnpm proto:generate to refresh)"
+  fi
+  pnpm proto:lint || true
+else
+  if [[ ! -d packages/proto/gen/go ]]; then
+    echo "ERROR: buf not installed and packages/proto/gen missing" >&2
+    exit 1
+  fi
+  echo "buf not installed; using existing packages/proto/gen"
+fi
+
 echo "==> lint go"
 bash scripts/lint-go.sh
 
 echo "==> lint typescript"
 pnpm format:check
 pnpm --filter @ai-finops/web lint
-
-echo "==> proto lint + generate"
-if command -v buf >/dev/null 2>&1; then
-  pnpm proto:lint
-  if [[ -d packages/proto/gen/go && -d packages/proto/gen/ts ]]; then
-    echo "    proto gen present; skipping buf generate (run pnpm proto:generate to refresh)"
-  else
-    pnpm proto:generate
-  fi
-else
-  echo "buf not installed; skipping proto checks"
-fi
 
 echo "==> atlas migrate hash"
 if command -v atlas >/dev/null 2>&1; then

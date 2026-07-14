@@ -72,6 +72,7 @@ WITH_E2E=1 bash scripts/quality-gate.sh
 - Kafka consumer can get 0 partitions if topic missing at first join — `EnsureTopic` + `init-local.sh` mitigate
 - Nullable UUID → ClickHouse must use untyped nil, not `*uuid.UUID(nil)`
 - Envoy `safe_regex` matches the **entire** path
+- `packages/proto/gen/` is **gitignored** — CI and local lint must run `pnpm proto:generate` before golangci-lint / go test
 
 ## Where to add Phase 2 features
 

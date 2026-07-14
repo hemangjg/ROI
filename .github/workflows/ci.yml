@@ -22,10 +22,23 @@ jobs:
           cache-dependency-path: |
             go.work.sum
             **/go.sum
-      - name: Sync go.work
-        run: go work sync
+      - uses: bufbuild/buf-setup-action@v1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install deps
+        run: |
+          pnpm install --frozen-lockfile
+          go work sync
+      # packages/proto/gen is gitignored — must exist before golangci-lint / go test
+      - name: Generate protos
+        run: pnpm proto:generate
       - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
       - run: bash scripts/lint-go.sh
 
   lint-ts:
@@ -95,9 +108,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
       - uses: sqlc-dev/setup-sqlc@v4
         with:
           sqlc-version: "1.28.0"
+      - run: pnpm install --frozen-lockfile
       - run: pnpm sqlc:generate
       - name: Check SQLC drift
         run: |
@@ -111,6 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -126,6 +148,8 @@ jobs:
             **/go.sum
       - run: pnpm install --frozen-lockfile
       - run: go work sync
+      - name: Generate protos
+        run: pnpm proto:generate
       - run: pnpm test:go
       - run: bash scripts/test-services.sh
       - run: pnpm exec nx run-many -t test --projects=web,sdk-core,sdk-typescript
@@ -136,6 +160,7 @@ jobs:
     needs: [lint-go, lint-ts, proto, test]
     steps:
       - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1
       - uses: pnpm/action-setup@v4
         with:
           version: 9
