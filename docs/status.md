@@ -52,7 +52,13 @@ See also [runbook.md](./runbook.md) and root `AGENTS.md`.
 - `scripts/quality-gate.sh` single entry for offline (+ optional e2e)
 - `AGENTS.md` + `docs/runbook.md`
 
-## Not claimed
+## Phase 2 — budgets (first slice)
 
-- Phase 2+ product features (budgets, multi-provider expansion, SSO, etc.)
-- Product exit criteria (design partners, paying customers, $1M tracked spend)
+Shipped:
+
+- `budgets` + `budget_alerts` tables (Atlas migration `20260713120000_budgets.sql`)
+- Management API: `PUT/GET /v1/orgs/{id}/budgets`, `POST .../budgets/evaluate`, `GET/POST .../budget-alerts`
+- Soft threshold math unit tests + dashboard **Budgets** page
+- OpenAPI updated
+
+Still later in Phase 2: email/Slack delivery, auto-evaluate from ClickHouse spend, hard limits, forecasting, allowlists.

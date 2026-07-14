@@ -35,6 +35,31 @@ type AuditLog struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
+type Budget struct {
+	ID               pgtype.UUID        `json:"id"`
+	OrgID            pgtype.UUID        `json:"org_id"`
+	TeamID           pgtype.UUID        `json:"team_id"`
+	AmountUsd        pgtype.Numeric     `json:"amount_usd"`
+	SoftThresholdPct int32              `json:"soft_threshold_pct"`
+	PeriodStart      pgtype.Date        `json:"period_start"`
+	CreatedBy        pgtype.UUID        `json:"created_by"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type BudgetAlert struct {
+	ID           pgtype.UUID        `json:"id"`
+	BudgetID     pgtype.UUID        `json:"budget_id"`
+	OrgID        pgtype.UUID        `json:"org_id"`
+	TeamID       pgtype.UUID        `json:"team_id"`
+	ThresholdPct int32              `json:"threshold_pct"`
+	SpendUsd     pgtype.Numeric     `json:"spend_usd"`
+	BudgetUsd    pgtype.Numeric     `json:"budget_usd"`
+	Status       string             `json:"status"`
+	Message      string             `json:"message"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type IdempotencyKey struct {
 	ID             pgtype.UUID        `json:"id"`
 	OrgID          pgtype.UUID        `json:"org_id"`

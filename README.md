@@ -252,9 +252,9 @@ Clients (SDKs + Dashboard)
 | **0** | Product definition | Complete |
 | **0.5** | Technical architecture | Complete |
 | **1** | Project foundation (monorepo, shells, CI, docs) | Complete |
-| **1b** | Ingestion MVP (domain APIs + data model) | Complete (verify with Docker + `scripts/setup-p2-ws*.sh`) |
-| **2** | Budgets + governance | Not started |
-| **3** | Optimization + ROI | Not started |
+| **1b** | Ingestion MVP (domain APIs + data model) | Complete (verify with Docker + `scripts/e2e-smoke.sh`) |
+| **2** | Budgets + governance | In progress (team budgets + soft alerts shipped) |
+| **3** | Optimization + intelligence | Not started |
 | **4** | Enterprise (SSO, SCIM, billing) | Not started |
 
 ---

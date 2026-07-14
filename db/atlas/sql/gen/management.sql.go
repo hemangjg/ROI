@@ -12,6 +12,36 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const acknowledgeBudgetAlert = `-- name: AcknowledgeBudgetAlert :one
+UPDATE budget_alerts
+SET status = 'acknowledged'
+WHERE id = $1 AND org_id = $2 AND status = 'open'
+RETURNING id, budget_id, org_id, team_id, threshold_pct, spend_usd, budget_usd, status, message, created_at
+`
+
+type AcknowledgeBudgetAlertParams struct {
+	ID    pgtype.UUID `json:"id"`
+	OrgID pgtype.UUID `json:"org_id"`
+}
+
+func (q *Queries) AcknowledgeBudgetAlert(ctx context.Context, arg AcknowledgeBudgetAlertParams) (BudgetAlert, error) {
+	row := q.db.QueryRow(ctx, acknowledgeBudgetAlert, arg.ID, arg.OrgID)
+	var i BudgetAlert
+	err := row.Scan(
+		&i.ID,
+		&i.BudgetID,
+		&i.OrgID,
+		&i.TeamID,
+		&i.ThresholdPct,
+		&i.SpendUsd,
+		&i.BudgetUsd,
+		&i.Status,
+		&i.Message,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createApiKey = `-- name: CreateApiKey :one
 INSERT INTO api_keys (org_id, name, key_prefix, key_hash, scopes, created_by)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -155,6 +185,35 @@ func (q *Queries) GetApiKeyByID(ctx context.Context, arg GetApiKeyByIDParams) (A
 	return i, err
 }
 
+const getBudgetByTeamPeriod = `-- name: GetBudgetByTeamPeriod :one
+SELECT id, org_id, team_id, amount_usd, soft_threshold_pct, period_start, created_by, created_at, updated_at
+FROM budgets
+WHERE org_id = $1 AND team_id = $2 AND period_start = $3
+`
+
+type GetBudgetByTeamPeriodParams struct {
+	OrgID       pgtype.UUID `json:"org_id"`
+	TeamID      pgtype.UUID `json:"team_id"`
+	PeriodStart pgtype.Date `json:"period_start"`
+}
+
+func (q *Queries) GetBudgetByTeamPeriod(ctx context.Context, arg GetBudgetByTeamPeriodParams) (Budget, error) {
+	row := q.db.QueryRow(ctx, getBudgetByTeamPeriod, arg.OrgID, arg.TeamID, arg.PeriodStart)
+	var i Budget
+	err := row.Scan(
+		&i.ID,
+		&i.OrgID,
+		&i.TeamID,
+		&i.AmountUsd,
+		&i.SoftThresholdPct,
+		&i.PeriodStart,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getOrgMembership = `-- name: GetOrgMembership :one
 SELECT id, user_id, org_id, role, created_at
 FROM org_memberships
@@ -288,6 +347,49 @@ func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) 
 	return i, err
 }
 
+const insertBudgetAlert = `-- name: InsertBudgetAlert :one
+INSERT INTO budget_alerts (budget_id, org_id, team_id, threshold_pct, spend_usd, budget_usd, status, message)
+VALUES ($1, $2, $3, $4, $5, $6, 'open', $7)
+ON CONFLICT (budget_id, threshold_pct) DO NOTHING
+RETURNING id, budget_id, org_id, team_id, threshold_pct, spend_usd, budget_usd, status, message, created_at
+`
+
+type InsertBudgetAlertParams struct {
+	BudgetID     pgtype.UUID    `json:"budget_id"`
+	OrgID        pgtype.UUID    `json:"org_id"`
+	TeamID       pgtype.UUID    `json:"team_id"`
+	ThresholdPct int32          `json:"threshold_pct"`
+	SpendUsd     pgtype.Numeric `json:"spend_usd"`
+	BudgetUsd    pgtype.Numeric `json:"budget_usd"`
+	Message      string         `json:"message"`
+}
+
+func (q *Queries) InsertBudgetAlert(ctx context.Context, arg InsertBudgetAlertParams) (BudgetAlert, error) {
+	row := q.db.QueryRow(ctx, insertBudgetAlert,
+		arg.BudgetID,
+		arg.OrgID,
+		arg.TeamID,
+		arg.ThresholdPct,
+		arg.SpendUsd,
+		arg.BudgetUsd,
+		arg.Message,
+	)
+	var i BudgetAlert
+	err := row.Scan(
+		&i.ID,
+		&i.BudgetID,
+		&i.OrgID,
+		&i.TeamID,
+		&i.ThresholdPct,
+		&i.SpendUsd,
+		&i.BudgetUsd,
+		&i.Status,
+		&i.Message,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listApiKeysByOrg = `-- name: ListApiKeysByOrg :many
 SELECT id, org_id, name, key_prefix, key_hash, scopes, created_by, revoked_at, created_at
 FROM api_keys
@@ -363,6 +465,110 @@ func (q *Queries) ListAuditLogsByOrg(ctx context.Context, arg ListAuditLogsByOrg
 			&i.Metadata,
 			&i.IpAddress,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listBudgetAlertsByOrg = `-- name: ListBudgetAlertsByOrg :many
+SELECT id, budget_id, org_id, team_id, threshold_pct, spend_usd, budget_usd, status, message, created_at
+FROM budget_alerts
+WHERE org_id = $1
+  AND ($2::text IS NULL OR status = $2)
+ORDER BY created_at DESC
+LIMIT $3
+`
+
+type ListBudgetAlertsByOrgParams struct {
+	OrgID        pgtype.UUID `json:"org_id"`
+	StatusFilter pgtype.Text `json:"status_filter"`
+	PageLimit    int32       `json:"page_limit"`
+}
+
+func (q *Queries) ListBudgetAlertsByOrg(ctx context.Context, arg ListBudgetAlertsByOrgParams) ([]BudgetAlert, error) {
+	rows, err := q.db.Query(ctx, listBudgetAlertsByOrg, arg.OrgID, arg.StatusFilter, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BudgetAlert{}
+	for rows.Next() {
+		var i BudgetAlert
+		if err := rows.Scan(
+			&i.ID,
+			&i.BudgetID,
+			&i.OrgID,
+			&i.TeamID,
+			&i.ThresholdPct,
+			&i.SpendUsd,
+			&i.BudgetUsd,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listBudgetsByOrgPeriod = `-- name: ListBudgetsByOrgPeriod :many
+SELECT b.id, b.org_id, b.team_id, t.name AS team_name, b.amount_usd, b.soft_threshold_pct,
+       b.period_start, b.created_by, b.created_at, b.updated_at
+FROM budgets b
+JOIN teams t ON t.id = b.team_id
+WHERE b.org_id = $1 AND b.period_start = $2
+ORDER BY t.name
+`
+
+type ListBudgetsByOrgPeriodParams struct {
+	OrgID       pgtype.UUID `json:"org_id"`
+	PeriodStart pgtype.Date `json:"period_start"`
+}
+
+type ListBudgetsByOrgPeriodRow struct {
+	ID               pgtype.UUID        `json:"id"`
+	OrgID            pgtype.UUID        `json:"org_id"`
+	TeamID           pgtype.UUID        `json:"team_id"`
+	TeamName         string             `json:"team_name"`
+	AmountUsd        pgtype.Numeric     `json:"amount_usd"`
+	SoftThresholdPct int32              `json:"soft_threshold_pct"`
+	PeriodStart      pgtype.Date        `json:"period_start"`
+	CreatedBy        pgtype.UUID        `json:"created_by"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListBudgetsByOrgPeriod(ctx context.Context, arg ListBudgetsByOrgPeriodParams) ([]ListBudgetsByOrgPeriodRow, error) {
+	rows, err := q.db.Query(ctx, listBudgetsByOrgPeriod, arg.OrgID, arg.PeriodStart)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListBudgetsByOrgPeriodRow{}
+	for rows.Next() {
+		var i ListBudgetsByOrgPeriodRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
+			&i.TeamID,
+			&i.TeamName,
+			&i.AmountUsd,
+			&i.SoftThresholdPct,
+			&i.PeriodStart,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -544,6 +750,50 @@ func (q *Queries) UpdateOrganization(ctx context.Context, arg UpdateOrganization
 		&i.Name,
 		&i.Slug,
 		&i.Timezone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertBudget = `-- name: UpsertBudget :one
+INSERT INTO budgets (org_id, team_id, amount_usd, soft_threshold_pct, period_start, created_by)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (team_id, period_start) DO UPDATE
+SET
+  amount_usd = EXCLUDED.amount_usd,
+  soft_threshold_pct = EXCLUDED.soft_threshold_pct,
+  updated_at = now()
+RETURNING id, org_id, team_id, amount_usd, soft_threshold_pct, period_start, created_by, created_at, updated_at
+`
+
+type UpsertBudgetParams struct {
+	OrgID            pgtype.UUID    `json:"org_id"`
+	TeamID           pgtype.UUID    `json:"team_id"`
+	AmountUsd        pgtype.Numeric `json:"amount_usd"`
+	SoftThresholdPct int32          `json:"soft_threshold_pct"`
+	PeriodStart      pgtype.Date    `json:"period_start"`
+	CreatedBy        pgtype.UUID    `json:"created_by"`
+}
+
+func (q *Queries) UpsertBudget(ctx context.Context, arg UpsertBudgetParams) (Budget, error) {
+	row := q.db.QueryRow(ctx, upsertBudget,
+		arg.OrgID,
+		arg.TeamID,
+		arg.AmountUsd,
+		arg.SoftThresholdPct,
+		arg.PeriodStart,
+		arg.CreatedBy,
+	)
+	var i Budget
+	err := row.Scan(
+		&i.ID,
+		&i.OrgID,
+		&i.TeamID,
+		&i.AmountUsd,
+		&i.SoftThresholdPct,
+		&i.PeriodStart,
+		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

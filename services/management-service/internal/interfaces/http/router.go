@@ -49,6 +49,17 @@ func NewRouter(serviceName string, log *slog.Logger, queries *sqlcgen.Queries, m
 				r.Delete("/{keyId}", mgmt.RevokeApiKey)
 			})
 
+			r.Route("/budgets", func(r chi.Router) {
+				r.Get("/", mgmt.ListBudgets)
+				r.Put("/", mgmt.UpsertBudget)
+				r.Post("/evaluate", mgmt.EvaluateBudget)
+			})
+
+			r.Route("/budget-alerts", func(r chi.Router) {
+				r.Get("/", mgmt.ListBudgetAlerts)
+				r.Post("/{alertId}/ack", mgmt.AcknowledgeBudgetAlert)
+			})
+
 			r.Get("/audit-logs", mgmt.ListAuditLogs)
 		})
 	}

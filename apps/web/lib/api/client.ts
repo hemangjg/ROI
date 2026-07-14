@@ -113,5 +113,121 @@ export const api = {
       if (shouldUseMocks()) return mockAuditLog;
       return apiFetch<AuditLogPage>(`/orgs/${orgId}/audit-logs`);
     },
+    async listTeams(orgId: string): Promise<Team[]> {
+      if (shouldUseMocks()) return [{ id: "team-demo", name: "Platform", created_at: new Date().toISOString() }];
+      return apiFetch<Team[]>(`/orgs/${orgId}/teams`);
+    },
+    async listBudgets(orgId: string, period?: string): Promise<Budget[]> {
+      if (shouldUseMocks()) return [];
+      const q = period ? `?period=${encodeURIComponent(period)}` : "";
+      return apiFetch<Budget[]>(`/orgs/${orgId}/budgets${q}`);
+    },
+    async upsertBudget(
+      orgId: string,
+      body: {
+        team_id: string;
+        amount_usd: string;
+        soft_threshold_pct?: number;
+        period_start?: string;
+      },
+    ): Promise<Budget> {
+      if (shouldUseMocks()) {
+        return {
+          id: "budget-demo",
+          org_id: orgId,
+          team_id: body.team_id,
+          amount_usd: body.amount_usd,
+          soft_threshold_pct: body.soft_threshold_pct ?? 80,
+          period_start: body.period_start ?? "2026-07-01",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      }
+      return apiFetch<Budget>(`/orgs/${orgId}/budgets`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+    },
+    async evaluateBudget(
+      orgId: string,
+      body: { team_id: string; spend_usd: string; period_start?: string },
+    ): Promise<BudgetStatus> {
+      if (shouldUseMocks()) {
+        return {
+          id: "budget-demo",
+          org_id: orgId,
+          team_id: body.team_id,
+          amount_usd: "100.00",
+          soft_threshold_pct: 80,
+          period_start: "2026-07-01",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          spend_usd: body.spend_usd,
+          usage_pct: 85,
+          over_soft_threshold: true,
+          alert_fired: true,
+        };
+      }
+      return apiFetch<BudgetStatus>(`/orgs/${orgId}/budgets/evaluate`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    },
+    async listBudgetAlerts(orgId: string, status?: string): Promise<BudgetAlert[]> {
+      if (shouldUseMocks()) return [];
+      const q = status ? `?status=${encodeURIComponent(status)}` : "";
+      return apiFetch<BudgetAlert[]>(`/orgs/${orgId}/budget-alerts${q}`);
+    },
+    async acknowledgeBudgetAlert(orgId: string, alertId: string): Promise<BudgetAlert> {
+      if (shouldUseMocks()) {
+        return {
+          id: alertId,
+          budget_id: "budget-demo",
+          org_id: orgId,
+          team_id: "team-demo",
+          threshold_pct: 80,
+          spend_usd: "85.00",
+          budget_usd: "100.00",
+          status: "acknowledged",
+          message: "mock",
+          created_at: new Date().toISOString(),
+        };
+      }
+      return apiFetch<BudgetAlert>(`/orgs/${orgId}/budget-alerts/${alertId}/ack`, {
+        method: "POST",
+      });
+    },
   },
+};
+
+export type Team = { id: string; name: string; created_at?: string; org_id?: string };
+export type Budget = {
+  id: string;
+  org_id: string;
+  team_id: string;
+  team_name?: string;
+  amount_usd: string;
+  soft_threshold_pct: number;
+  period_start: string;
+  created_at: string;
+  updated_at: string;
+};
+export type BudgetAlert = {
+  id: string;
+  budget_id: string;
+  org_id: string;
+  team_id: string;
+  threshold_pct: number;
+  spend_usd: string;
+  budget_usd: string;
+  status: string;
+  message: string;
+  created_at: string;
+};
+export type BudgetStatus = Budget & {
+  spend_usd: string;
+  usage_pct: number;
+  over_soft_threshold: boolean;
+  alert_fired: boolean;
+  alert?: BudgetAlert;
 };

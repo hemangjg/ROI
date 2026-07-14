@@ -10,6 +10,7 @@ import {
   ScrollText,
   Settings,
   Users,
+  Wallet,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/providers", label: "Providers", icon: LineChart },
   { href: "/dashboard/teams", label: "Teams", icon: Users },
+  { href: "/dashboard/budgets", label: "Budgets", icon: Wallet },
 ];
 
 const settingsItems = [

@@ -166,3 +166,40 @@ CREATE TRIGGER audit_logs_no_delete
     BEFORE DELETE ON audit_logs
     FOR EACH ROW
     EXECUTE FUNCTION prevent_audit_log_mutation();
+
+-- Phase 2: team monthly budgets + soft-limit alerts
+CREATE TABLE budgets (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id              UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
+    team_id             UUID NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
+    amount_usd          NUMERIC(20, 8) NOT NULL,
+    soft_threshold_pct  INTEGER NOT NULL DEFAULT 80,
+    period_start        DATE NOT NULL,
+    created_by          UUID REFERENCES users (id) ON DELETE SET NULL,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT budgets_amount_positive CHECK (amount_usd > 0),
+    CONSTRAINT budgets_threshold_range CHECK (soft_threshold_pct BETWEEN 1 AND 100),
+    CONSTRAINT budgets_team_period_unique UNIQUE (team_id, period_start)
+);
+
+CREATE INDEX budgets_org_period_idx ON budgets (org_id, period_start DESC);
+
+CREATE TABLE budget_alerts (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    budget_id       UUID NOT NULL REFERENCES budgets (id) ON DELETE CASCADE,
+    org_id          UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
+    team_id         UUID NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
+    threshold_pct   INTEGER NOT NULL,
+    spend_usd       NUMERIC(20, 8) NOT NULL,
+    budget_usd      NUMERIC(20, 8) NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'open',
+    message         TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT budget_alerts_status_check CHECK (status IN ('open', 'acknowledged')),
+    CONSTRAINT budget_alerts_threshold_range CHECK (threshold_pct BETWEEN 1 AND 100),
+    CONSTRAINT budget_alerts_budget_threshold_unique UNIQUE (budget_id, threshold_pct)
+);
+
+CREATE INDEX budget_alerts_org_created_idx ON budget_alerts (org_id, created_at DESC);
+CREATE INDEX budget_alerts_org_status_idx ON budget_alerts (org_id, status);

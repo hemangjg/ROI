@@ -233,6 +233,102 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiKey"
+  /orgs/{orgId}/budgets:
+    get:
+      tags: [Management]
+      summary: List team monthly budgets for a period
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - name: period
+          in: query
+          description: Month as YYYY-MM or YYYY-MM-DD (defaults to current UTC month)
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Budget"
+    put:
+      tags: [Management]
+      summary: Create or update a team monthly budget
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertBudgetRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+  /orgs/{orgId}/budgets/evaluate:
+    post:
+      tags: [Management]
+      summary: Evaluate spend against a team budget and fire soft alert if needed
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateBudgetRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetStatus"
+  /orgs/{orgId}/budget-alerts:
+    get:
+      tags: [Management]
+      summary: List budget soft-limit alerts
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, acknowledged]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BudgetAlert"
+  /orgs/{orgId}/budget-alerts/{alertId}/ack:
+    post:
+      tags: [Management]
+      summary: Acknowledge an open budget alert
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetAlert"
   /orgs/{orgId}/audit-logs:
     get:
       tags: [Management]
@@ -473,6 +569,91 @@ components:
           type: string
         created_at:
           type: string
+    UpsertBudgetRequest:
+      type: object
+      required: [team_id, amount_usd]
+      properties:
+        team_id:
+          type: string
+          format: uuid
+        amount_usd:
+          type: string
+        soft_threshold_pct:
+          type: integer
+          default: 80
+        period_start:
+          type: string
+          description: YYYY-MM or YYYY-MM-DD
+    EvaluateBudgetRequest:
+      type: object
+      required: [team_id, spend_usd]
+      properties:
+        team_id:
+          type: string
+          format: uuid
+        spend_usd:
+          type: string
+        period_start:
+          type: string
+    Budget:
+      type: object
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        team_id:
+          type: string
+        team_name:
+          type: string
+        amount_usd:
+          type: string
+        soft_threshold_pct:
+          type: integer
+        period_start:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    BudgetAlert:
+      type: object
+      properties:
+        id:
+          type: string
+        budget_id:
+          type: string
+        org_id:
+          type: string
+        team_id:
+          type: string
+        threshold_pct:
+          type: integer
+        spend_usd:
+          type: string
+        budget_usd:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+        created_at:
+          type: string
+    BudgetStatus:
+      allOf:
+        - $ref: "#/components/schemas/Budget"
+        - type: object
+          properties:
+            spend_usd:
+              type: string
+            usage_pct:
+              type: number
+            over_soft_threshold:
+              type: boolean
+            alert_fired:
+              type: boolean
+            alert:
+              $ref: "#/components/schemas/BudgetAlert"
     AuditLogPage:
       type: object
       properties:
